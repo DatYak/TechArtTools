@@ -70,8 +70,32 @@ class StampBuddy():
                 x = hitPoint.x
                 y = hitPoint.y
                 z = hitPoint.z
+                
+                normal = om.MVector()
+                fnMesh.getPolygonNormal(hitFace.value(), normal, om.MSpace.kWorld)
+                
+                up = om.MVector (0, 1, 0)
+                right = normal ^ up
+                forward = right ^ normal
 
-                print(x, y, z)
+                matrix = om.MMatrix()
+                util = om.MScriptUtil()
+                matrixList = [
+                    right.x, right.y, right.z, 0.0,
+                    forward.x, forward.y, forward.z, 0.0,
+                    normal.x, normal.y, normal.z, 0.0,
+                    0.0, 0.0, 0.0, 0.0
+                ]
+                util.createMatrixFromList(matrixList, matrix)
+                
+                matrixTr = om.MTransformationMatrix(matrix)
+                eulers = matrixTr.eulerRotation()
+
+                stamp = cmds.polyCube()
+                cmds.select(stamp)
+                cmds.move(x, y, z)
+                cmds.rotate(eulers.x, eulers.y, eulers.z)
+
 
 
 app = StampBuddy()
