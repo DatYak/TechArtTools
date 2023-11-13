@@ -1,9 +1,6 @@
 import math
-import maya.OpenMaya as om
-import maya.OpenMayaUI as omui
-import maya.cmds as cmds
 import json
-import maya.mel as mel
+import maya.cmds as cmds
 
 class Stamp():
     def __init__(self, **kwargs):
@@ -34,6 +31,9 @@ class StampUI():
 
 
 class StampBuddy():
+    
+    stampPlugin = any
+
     def __init__(self) -> None:
         self.toolName ='StampTool'
 
@@ -48,6 +48,7 @@ class StampBuddy():
         self.numLibRows = 1
 
         #Variable Setup
+        cmds.loadPlugin('StampPlacer', qt=True)
         if(cmds.draggerContext(self.toolName, q=True, ex=True)):
             cmds.deleteUI(self.toolName)
         self.dragContext = cmds.draggerContext(self.toolName, n="Stamp Tool", rc=self.place_stamp, sp='screen')
@@ -63,10 +64,6 @@ class StampBuddy():
         cmds.rowLayout(nc=2)
         cmds.button(l='Stamp Tool', c=self.setup_stamp_tool)
         cmds.button(l="Create New Stamp", c=self.save_stamp)
-        
-        #cmds.setParent(self.mainLayout)
-        #cmds.rowLayout()
-        #self.isInsettingCheck = cmds.checkBox(l='Inset?')
 
         cmds.setParent(self.mainLayout)
         self.libraryScrollContainer = cmds.scrollLayout()
@@ -131,83 +128,12 @@ class StampBuddy():
 
 
     def place_stamp(self, *args):
-        cmds.undoInfo(cn='Stamp', openChunk=True)
         priorSelection = cmds.ls(sl=True)
         vpX, vpY, _ = cmds.draggerContext(self.dragContext, q=True, dp=True)
-        position = om.MPoint()
-        direction = om.MVector()
 
-        omui.M3dView().active3dView().viewToWorld(
-            int(vpX), int(vpY),
-            position,
-            direction)
+        cmds.GetStampMatrix(xp=vpX, yp=vpY, sp=str(self.stampPath))
         
-        meshIsectParams = om.MMeshIsectAccelParams()
-
-        for mesh in cmds.ls(typ='mesh'):
-            selectionList = om.MSelectionList()
-            selectionList.add(mesh)
-            dagPath = om.MDagPath()
-            selectionList.getDagPath(0, dagPath)
-            fnMesh = om.MFnMesh(dagPath)
-
-            hitPoint = om.MFloatPoint()
-            hitRayParam = om.floatPtr()
-            hitFace = om.intPtr()
-            hitTriangle = om.intPtr()
-            hitBary1 =  om.floatPtr()
-            hitBary2 =  om.floatPtr()
-
-            intersection = fnMesh.closestIntersection(
-                om.MFloatPoint(position),
-                om.MFloatVector(direction),
-                None,
-                None,
-                False,
-                om.MSpace.kWorld,
-                99999,
-                False,
-                meshIsectParams,
-                hitPoint,
-                hitRayParam,
-                hitFace,
-                hitTriangle,
-                hitBary1,
-                hitBary2)
-
-            if (intersection):
-                x = hitPoint.x
-                y = hitPoint.y
-                z = hitPoint.z
-                
-                normal = om.MVector()
-                fnMesh.getPolygonNormal(hitFace.value(), normal, om.MSpace.kWorld)
-                
-                up = om.MVector (0, 1, 0)
-                right = normal ^ up
-                up = right ^ normal
-
-                matrixList = [
-                    right.x, right.y, right.z, 0.0,
-                    up.x, up.y, up.z, 0.0,
-                    normal.x, normal.y, normal.z, 0.0,
-                    x, y, z, 1.0
-                ]
-
-                mel.eval("FBXImportMode -v add")                
-                stamp = cmds.file(self.stampPath, i=True, typ='FBX', mnc=True, ns=':', rnn=True)
-
-                cmds.xform(stamp, m=matrixList)
-                cmds.xform(stamp, s=(1,1,1))
-
-                # if self.checkCheckbox(self.isInsettingCheck):
-                #     cmds.xform(stamp, ro=(180, 0, 0))
-                #     combined = cmds.polyCBoolOp(base, stamp, op=2)
-                #     cmds.delete(combined, ch=True)
-                #     priorSelection = combined
-                cmds.select(priorSelection)
-                break
-    cmds.undoInfo(cn='Stamp', closeChunk=True)
+        cmds.select(priorSelection)
 
     
     def prompt_load_library(self):
