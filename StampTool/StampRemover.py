@@ -10,7 +10,6 @@ kXPositionLongFlag = "-xposition"
 kYPositionFlag = "-yp"
 kYPositionLongFlag = "-yposition"
 kStampPathFlag = "-sp"
-kStampPathLongFlag = "-stamppath"
 
 
 def maya_useNewAPI(plugin):
@@ -39,9 +38,7 @@ def uninitializePlugin(plugin):
 
 class StampPlacerCmd( om.MPxCommand ):
     
-    COMMAND_NAME = 'GetStampMatrix'
-
-    stamped_item = any
+    COMMAND_NAME = 'RemoveStamp'
 
     def __init__(self):
         om.MPxCommand.__init__(self)
@@ -78,10 +75,13 @@ class StampPlacerCmd( om.MPxCommand ):
             selectionList.getDagPath(0, dagPath)
             fnMesh = omold.MFnMesh(dagPath)
 
+            face_idx_util = omold.MScriptUtil()
+            face_idx_util.createFromInt(-1)
+
             hitPoint = omold.MFloatPoint()
             hitRayParam = None
-            hitFace = omold.intPtr()
             hitTriangle = None
+            face_int_ptr = face_idx_util.asIntPtr()
             hitBary1 = None
             hitBary2 = None
 
@@ -97,50 +97,23 @@ class StampPlacerCmd( om.MPxCommand ):
                 meshIsectParams,
                 hitPoint,
                 hitRayParam,
-                hitFace,
+                face_int_ptr,
                 hitTriangle,
                 hitBary1,
                 hitBary2)
 
             if (intersection):
-                x = hitPoint.x
-                y = hitPoint.y
-                z = hitPoint.z
                 
-                normal = omold.MVector()
-                fnMesh.getPolygonNormal(hitFace.value(), normal, omold.MSpace.kWorld)
-                
-                up = omold.MVector (0, 1, 0)
-                right = normal ^ up
-                up = right ^ normal
-
-                matrixList = [
-                    right.x, right.y, right.z, 0.0,
-                    up.x, up.y, up.z, 0.0,
-                    normal.x, normal.y, normal.z, 0.0,
-                    x, y, z, 1.0
-                ]
-
-                mel.eval("FBXImportMode -v add")  
-                print(stampPath)
-                path = os.path.relpath(stampPath, start=__path__)
-                stamp = cmds.file(path, i=True, typ='FBX', mnc=True, ns=':', rnn=True)
-
-                cmds.xform(stamp, m=matrixList)
-                cmds.xform(stamp, s=(1,1,1))
-                self.stamped_item = stamp
-                break        
     
     
     def undoIt(self):
-        cmds.delete(self.stamped_item)
         pass
     
 
     def isUndoable(self):
         return True
     
-    
+
     @staticmethod
     def cmdCreator():
         return StampPlacerCmd()
@@ -151,5 +124,4 @@ class StampPlacerCmd( om.MPxCommand ):
         syntax = om.MSyntax()
         syntax.addFlag(kXPositionFlag, kXPositionLongFlag, om.MSyntax.kDistance)
         syntax.addFlag(kYPositionFlag, kYPositionLongFlag, om.MSyntax.kDistance)
-        syntax.addFlag(kStampPathFlag, kStampPathLongFlag, om.MSyntax.kString)
         return syntax

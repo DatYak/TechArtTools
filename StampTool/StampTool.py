@@ -146,8 +146,8 @@ class StampBuddy():
         savePromptResult = cmds.promptDialog(t="Name", m="Choose a name for the Stamp", b=["OK", "Cancel"], db="OK", cb="Cancel", ds="Cancel")
         if savePromptResult == "OK":
             text = cmds.promptDialog(q=True, t=True)
-            path = cmds.fileDialog2(cap="Choose a Stamp FBX", ff='*.fbx', fm=1)
-            imagePath = cmds.fileDialog2(cap="Choose an image icon", ff='*.png', fm=1)
+            path = cmds.fileDialog2(cap="Choose a Stamp FBX", ff='*.fbx', fm=1)[0]
+            imagePath = cmds.fileDialog2(cap="Choose an image icon", ff='*.png', fm=1)[0]
             newstamp = Stamp(n=text, sp=path, i=imagePath)
             self.stampLibrary.append(newstamp)
             self.display_library()
@@ -159,6 +159,7 @@ class StampBuddy():
         if self.stampLibraryPath is not None:
             file = open(self.stampLibraryPath[0])
             self.stampLibrary = json.load(file)
+
 
     def save_library(self, *args):
         JSONfilter = "*.json"
