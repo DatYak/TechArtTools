@@ -39,7 +39,7 @@ def uninitializePlugin(plugin):
 
 class StampPlacerCmd( om.MPxCommand ):
     
-    COMMAND_NAME = 'GetStampMatrix'
+    COMMAND_NAME = 'placeStamp'
 
     stamped_item = any
 
@@ -129,7 +129,7 @@ class StampPlacerCmd( om.MPxCommand ):
                 cmds.xform(stamp, m=matrixList)
                 cmds.xform(stamp, s=(1,1,1))
                 self.stamped_item = stamp
-                break        
+                return self.stamped_item        
     
     
     def undoIt(self):
