@@ -71,7 +71,6 @@ class StampBuddy():
         self.placedStamps = []
 
         #Variable Setup
-        #cmds.loadPlugin('StampPlacer', qt=True)
         if(cmds.draggerContext(self.toolName, q=True, ex=True)):
             cmds.deleteUI(self.toolName)
         self.dragContext = cmds.draggerContext(self.toolName, n="Stamp Tool", rc=self.place_stamp, sp='screen')
@@ -219,7 +218,7 @@ class StampBuddy():
                 normal = omold.MVector()
                 fnMesh.getPolygonNormal(hitFace.value(), normal, omold.MSpace.kWorld)
                 
-                up = omold.MVector (0, 1, 0)
+                up = omold.MVector (-1, 0, 0)
                 right = normal ^ up
                 up = right ^ normal
 
