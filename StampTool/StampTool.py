@@ -38,6 +38,7 @@ class StampUI():
         self.stampPath = kwargs['sp']
         self.show_ui()
 
+
     def show_ui(self):
         self.layout = cmds.formLayout()
         cmds.button(w=80, l=self.name, c=self.select_stamp)
@@ -83,14 +84,16 @@ class StampBuddy():
         self.window = cmds.window(t='StampBuddy', wh=[400,250])
         self.mainLayout = cmds.columnLayout()
 
-        cmds.rowLayout(nc=3)
+        cmds.rowLayout(nc=3, gsp=5)
         cmds.button(l="Load a Stamp Library", c=self.load_library)
         cmds.button(l="Save this Stamp Library", c=self.save_library)
         cmds.button(l="Create New Stamp", c=self.save_stamp)
 
         cmds.setParent(self.mainLayout)
-        cmds.rowLayout(nc=2)
+        cmds.rowLayout(nc=4, gsp=5)
         cmds.button(l='Stamp Tool', c=self.setup_stamp_tool)
+        self.isDraggingToggle = cmds.checkBox(l='Drag To Scale', v=True)
+        self.scaleEntry = cmds.floatField(ann='Scale', min=0.01, v=1)
         cmds.button(l="Undo Stamp", c=self.undo_stamp)
 
         cmds.setParent(self.mainLayout)
@@ -167,6 +170,7 @@ class StampBuddy():
 
     def place_stamp(self, *args):
         priorSelection = cmds.ls(sl=True)
+        ipX, ipY, _ = cmds.draggerContext(self.dragContext, q=True, ap=True)
         vpX, vpY, _ = cmds.draggerContext(self.dragContext, q=True, dp=True)
 
         position = omold.MPoint()
@@ -176,6 +180,15 @@ class StampBuddy():
             int(vpX), int(vpY),
             position,
             direction)
+        
+
+        initialPosition = omold.MPoint()
+        initialDirection = omold.MVector()
+
+        omui.M3dView().active3dView().viewToWorld(
+            int(ipX), int(ipY),
+            initialPosition,
+            initialDirection)
         
         meshIsectParams = omold.MMeshIsectAccelParams()
 
@@ -194,8 +207,8 @@ class StampBuddy():
             hitBary2 = None
 
             intersection = fnMesh.closestIntersection(
-                omold.MFloatPoint(position),
-                omold.MFloatVector(direction),
+                omold.MFloatPoint(initialPosition),
+                omold.MFloatVector(initialDirection),
                 None,
                 None,
                 False,
@@ -232,10 +245,17 @@ class StampBuddy():
                 mel.eval("FBXImportMode -v add")
                 stamp = cmds.file(self.stampPath, i=True, typ='FBX', mnc=True, ns=':', rnn=True)
 
+                scale = 1
+                if cmds.checkBox(self.isDraggingToggle, q=True, v=True):
+                    scale = math.sqrt((initialPosition.x - position.x) ** 2 + (initialPosition.y - position.y) ** 2 + (initialPosition.z - position.z) ** 2) * 200
+                else:
+                    scale = cmds.floatField(self.scaleEntry, q=True, v=True)
+
                 cmds.xform(stamp, m=matrixList)
-                cmds.xform(stamp, s=(1,1,1))
+                cmds.xform(stamp, s=(scale,scale,scale))
                 self.placedStamps.append(stamp)        
-        cmds.select(priorSelection)
+                cmds.select(priorSelection)
+                return
 
     
     def prompt_load_library(self):
