@@ -1,3 +1,9 @@
+'''
+Stamp Tool For Maya
+Author: Isaac Lovy
+
+'''
+
 import maya.api.OpenMaya as om
 import maya.OpenMaya as omold
 import maya.OpenMayaUI as omui
@@ -6,15 +12,23 @@ import json
 import maya.cmds as cmds
 import maya.mel as mel
 import os
-    
+
+
+class Stamp(object):
+    def __init__(self, **kwargs):
+        self.__type__ = 'Stamp'
+        self.name = kwargs ['n']
+        self.stampPath = kwargs['sp']
+
+
 def obj_dict(obj):
     return obj.__dict__
 
 
-class Stamp():
-    def __init__(self, **kwargs):
-        self.name = kwargs ['n']
-        self.stampPath = kwargs['sp']
+def stamp_decoder(obj):
+    if '__type__' in obj and obj['__type__'] == 'Stamp':
+        return (Stamp(n=obj['name'], sp=obj['stampPath']))
+    return obj
 
 
 class StampUI():
@@ -84,10 +98,14 @@ class StampBuddy():
         self.libraryScrollContainer = cmds.scrollLayout()
         self.libraryLayout = cmds.gridLayout()
 
-        self.load_library()
+        self.prompt_load_library()
         self.display_library()
 
         cmds.showWindow(self.window)
+
+
+    def quit(self):
+        cmds.deleteUI(self.window)
 
 
     def display_library(self):
@@ -151,8 +169,6 @@ class StampBuddy():
     def place_stamp(self, *args):
         priorSelection = cmds.ls(sl=True)
         vpX, vpY, _ = cmds.draggerContext(self.dragContext, q=True, dp=True)
-
-        #cmds.placeStamp(xp=vpX, yp=vpY, sp=str(self.stampPath))
 
         position = omold.MPoint()
         direction = omold.MVector()
@@ -224,9 +240,13 @@ class StampBuddy():
 
     
     def prompt_load_library(self):
-        promptResult = cmds.confirmDialog(title='load a library', m='do you want to load a stamp library', button=['Yes','No'], defaultButton='Yes', cancelButton='No', dismissString='No' )
-        if (promptResult == 'Yes'):
+        promptResult = cmds.confirmDialog(title='load a library', m='do you want to create or load a stamp library', button=['Create','Load'], defaultButton='Create', cancelButton='Quit', dismissString='Quit' )
+        if (promptResult == 'Create'):
+            self.save_library()
+        if (promptResult == 'Load'):
             self.load_library()
+        if(promptResult == 'Quit'):
+            self.quit()
 
 
     def save_stamp(self, *args):
@@ -247,13 +267,14 @@ class StampBuddy():
         self.stampLibraryPath = self.stampLibraryPath[0]
         if self.stampLibraryPath is not None:
             file = open(self.stampLibraryPath)
-            self.stampLibrary = json.load(file)
-
+            self.stampLibrary = json.load(file, object_hook=stamp_decoder)
+            file.close()
 
     def save_library(self, *args):
         JSONfilter = "*.json"
         self.stampLibraryPath = cmds.fileDialog2(cap="Save a Stamp Library", ff=JSONfilter)
-        with open(self.stampLibraryPath[0], "w") as outfile:
+        self.stampLibraryPath = self.stampLibraryPath[0]
+        with open(self.stampLibraryPath, "w") as outfile:
             json.dump(self.stampLibrary, outfile, default=obj_dict)
 
 
