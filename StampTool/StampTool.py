@@ -6,11 +6,16 @@ import json
 import maya.cmds as cmds
 import maya.mel as mel
 import os
+    
+def obj_dict(obj):
+    return obj.__dict__
+
 
 class Stamp():
     def __init__(self, **kwargs):
         self.name = kwargs ['n']
         self.stampPath = kwargs['sp']
+
 
 class StampUI():
     def __init__(self, **kwargs):
@@ -79,7 +84,7 @@ class StampBuddy():
         self.libraryScrollContainer = cmds.scrollLayout()
         self.libraryLayout = cmds.gridLayout()
 
-        self.prompt_load_library()
+        self.load_library()
         self.display_library()
 
         cmds.showWindow(self.window)
@@ -134,7 +139,7 @@ class StampBuddy():
 
 
     def setup_stamp_object(self, filePath):
-        self.stampPath = filePath
+        self.stampPath = os.path.join(os.path.dirname(self.stampLibraryPath), filePath)
 
 
     def undo_stamp(self, *args):
@@ -215,8 +220,6 @@ class StampBuddy():
                 cmds.xform(stamp, m=matrixList)
                 cmds.xform(stamp, s=(1,1,1))
                 self.placedStamps.append(stamp)        
-    
-        
         cmds.select(priorSelection)
 
     
@@ -232,6 +235,7 @@ class StampBuddy():
             text = cmds.promptDialog(q=True, t=True)
             path = cmds.fileDialog2(cap="Choose a Stamp FBX", ff='*.fbx', fm=1)
             p = path[0]
+            p = os.path.relpath(p, os.path.dirname(self.stampLibraryPath))
             newstamp = Stamp(n=text, sp=p)
             self.stampLibrary.append(newstamp)
             self.display_library()
@@ -249,7 +253,7 @@ class StampBuddy():
         JSONfilter = "*.json"
         self.stampLibraryPath = cmds.fileDialog2(cap="Save a Stamp Library", ff=JSONfilter)
         with open(self.stampLibraryPath[0], "w") as outfile:
-            json.dump([ob.__dict__ for ob in self.stampLibrary], outfile)
+            json.dump(self.stampLibrary, outfile, default=obj_dict)
 
 
 app = StampBuddy()
