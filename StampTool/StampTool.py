@@ -139,7 +139,7 @@ class StampBuddy():
 
 
     def setup_stamp_object(self, filePath):
-        self.stampPath = os.path.join(os.path.dirname(self.stampLibraryPath), filePath)
+        self.stampPath = filePath #os.path.join(os.path.dirname(self.stampLibraryPath), filePath)
 
 
     def undo_stamp(self, *args):
@@ -235,7 +235,7 @@ class StampBuddy():
             text = cmds.promptDialog(q=True, t=True)
             path = cmds.fileDialog2(cap="Choose a Stamp FBX", ff='*.fbx', fm=1)
             p = path[0]
-            p = os.path.relpath(p, os.path.dirname(self.stampLibraryPath))
+            #p = os.path.relpath(p, os.path.dirname(self.stampLibraryPath))
             newstamp = Stamp(n=text, sp=p)
             self.stampLibrary.append(newstamp)
             self.display_library()
