@@ -41,7 +41,7 @@ class StampUI():
 
     def show_ui(self):
         self.layout = cmds.formLayout()
-        cmds.button(w=80, l=self.name, c=self.select_stamp)
+        cmds.button(h=20, w=80, l=self.name, c=self.select_stamp)
 
 
     def select_stamp(self, *agrs):
@@ -76,7 +76,7 @@ class StampBuddy():
             cmds.deleteUI(self.toolName)
         self.dragContext = cmds.draggerContext(self.toolName, n="Stamp Tool", rc=self.place_stamp, sp='screen')
 
-        self.uiSize = 80
+        self.uiSize = [80,20]
 
         self.show_ui()
 
@@ -90,15 +90,27 @@ class StampBuddy():
         cmds.button(l="Create New Stamp", c=self.save_stamp)
 
         cmds.setParent(self.mainLayout)
-        cmds.rowLayout(nc=4, gsp=5)
-        cmds.button(l='Stamp Tool', c=self.setup_stamp_tool)
-        self.isDraggingToggle = cmds.checkBox(l='Drag To Scale', v=True)
-        self.scaleEntry = cmds.floatField(ann='Scale', min=0.01, v=1)
-        cmds.button(l="Undo Stamp", c=self.undo_stamp)
+        self.libraryFormLayout = cmds.formLayout(numberOfDivisions=100)
+        optionsBar = cmds.rowLayout(nc=4, gsp=5)
+        cmds.button(h=self.uiSize[1], l='Stamp Tool', c=self.setup_stamp_tool)
+        self.isDraggingToggle = cmds.checkBox(h=self.uiSize[1], l='Drag To Scale', v=True)
+        self.scaleEntry = cmds.floatField(h=self.uiSize[1], ann='Scale', min=0.01, v=1)
+        cmds.button(h=self.uiSize[1], l="Undo Stamp", c=self.undo_stamp)
 
-        cmds.setParent(self.mainLayout)
-        self.libraryScrollContainer = cmds.scrollLayout()
-        self.libraryLayout = cmds.gridLayout()
+        cmds.setParent(self.libraryFormLayout)
+        self.libraryScrollContainer = cmds.scrollLayout(rc=self.recalc_stamp_grid)
+        self.calc_dimensions()
+        self.libraryLayout = cmds.gridLayout(cwh=self.uiSize, nc=self.numLibColumns, nr=self.numLibRows, cr=True)
+
+        cmds.formLayout(self.libraryFormLayout, edit= True,
+                    af= [
+                        (optionsBar, 'top', 0),
+                        (self.libraryScrollContainer, 'bottom', 5),
+                        (self.libraryScrollContainer, 'right', 5),
+                        (self.libraryScrollContainer, 'left', 5)],
+                    ac=[
+                        (self.libraryScrollContainer, 'top', 5, optionsBar)
+                    ])
 
         self.prompt_load_library()
         self.display_library()
@@ -114,7 +126,7 @@ class StampBuddy():
         cmds.deleteUI(self.libraryLayout)
         cmds.setParent(self.libraryScrollContainer)
 
-        self.libraryLayout = cmds.gridLayout(cw=self.uiSize, nc=self.numLibColumns, nr=self.numLibRows)
+        self.libraryLayout = cmds.gridLayout(cwh=self.uiSize, nc=self.numLibColumns, nr=self.numLibRows, cr=True)
         indexX = 1
         indexY = 0
         index = 1
@@ -131,15 +143,15 @@ class StampBuddy():
     def calc_dimensions(self):
         winWidth = cmds.scrollLayout(self.libraryScrollContainer, q=True, saw=True)
         winHeight = cmds.scrollLayout(self.libraryScrollContainer, q=True, sah=True)
-        self.numLibColumns = 1
-        totalHeigth = self.uiSize * self.libraryLayout.__len__()
-        if (totalHeigth > winHeight):
-            self.numLibColumns = round(winWidth/self.uiSize)
+        self.numLibRows = 1
+        totalWidth = self.uiSize[0] * self.stampLibrary.__len__()
+        if (totalWidth > winWidth):
+            self.numLibRows = round(winWidth/self.uiSize[1])
 
-        rows = winHeight / self.uiSize
-        rows = math.trunc(rows)
-        if (rows <= 0): rows = 1
-        self.numLibRows = rows
+        cols = winHeight / self.uiSize[1]
+        cols = math.trunc(cols)
+        if (cols <= 0): cols = 1
+        self.numLibColumns = cols
 
 
     def recalc_stamp_grid(self):
@@ -180,7 +192,6 @@ class StampBuddy():
             int(vpX), int(vpY),
             position,
             direction)
-        
 
         initialPosition = omold.MPoint()
         initialDirection = omold.MVector()
@@ -281,13 +292,17 @@ class StampBuddy():
 
 
     def load_library(self, *args):
+        prevLibPath = self.stampLibraryPath
         JSONfilter = "*.json"
         self.stampLibraryPath = cmds.fileDialog2(cap="Choose a Stamp Library", ff=JSONfilter, fm=1)
-        self.stampLibraryPath = self.stampLibraryPath[0]
         if self.stampLibraryPath is not None:
-            file = open(self.stampLibraryPath)
+            file = open(self.stampLibraryPath[0])
             self.stampLibrary = json.load(file, object_hook=stamp_decoder)
             file.close()
+            self.stampLibraryPath = self.stampLibraryPath[0]
+        else:
+            self.stampLibraryPath = prevLibPath
+
 
     def save_library(self, *args):
         JSONfilter = "*.json"
