@@ -2,6 +2,13 @@
 Stamp Tool For Maya
 Author: Isaac Lovy
 
+Current Features
+    - Place stamps on objects using Raytracing
+    - Have the size of each stamp be determined by dragged distance 
+    - OR input a set scale
+    - Name and store references to FBX files as stamps
+    - Save, Load, and edit collections of stamps
+
 '''
 
 import maya.api.OpenMaya as om
@@ -36,12 +43,19 @@ class StampUI():
         self.parent = kwargs['p']
         self.name = kwargs ['n']
         self.stampPath = kwargs['sp']
+        self.index = kwargs['i']
+        self.editing = kwargs['e']
         self.show_ui()
 
 
     def show_ui(self):
         self.layout = cmds.formLayout()
-        cmds.button(h=20, w=80, l=self.name, c=self.select_stamp)
+        if (not self.editing):
+            cmds.button(h=20, w=80, l=self.name, c=self.select_stamp)
+        else:
+            cmds.rowLayout(nc=2)
+            cmds.button(h=20, w=60, l=self.name, c=self.select_stamp)
+            cmds.button("X", c=self.promptDelete, w=20, bgc=(.95, 0.2, 0.2), h=20)
 
 
     def select_stamp(self, *agrs):
@@ -50,6 +64,11 @@ class StampUI():
         
     def getLayout (self):
         return self.layout
+    
+
+    def promptDelete(self, *args):
+        self.parent.prompt_delete_stamp(self.index)
+
 
 
 class StampBuddy():
@@ -84,10 +103,11 @@ class StampBuddy():
         self.window = cmds.window(t='StampBuddy', wh=[400,250])
         self.mainLayout = cmds.columnLayout()
 
-        cmds.rowLayout(nc=3, gsp=5)
+        cmds.rowLayout(nc=4, gsp=5)
         cmds.button(l="Load a Stamp Library", c=self.load_library)
         cmds.button(l="Save this Stamp Library", c=self.save_library)
         cmds.button(l="Create New Stamp", c=self.save_stamp)
+        self.isEditingCB = cmds.checkBox(l='Editing Library?', v=False, cc=self.display_library)
 
         cmds.setParent(self.mainLayout)
         self.libraryFormLayout = cmds.formLayout(numberOfDivisions=100)
@@ -122,7 +142,7 @@ class StampBuddy():
         cmds.deleteUI(self.window)
 
 
-    def display_library(self):
+    def display_library(self, *args):
         cmds.deleteUI(self.libraryLayout)
         cmds.setParent(self.libraryScrollContainer)
 
@@ -132,7 +152,7 @@ class StampBuddy():
         index = 1
         for stamp in self.stampLibrary:
             cmds.setParent(self.libraryLayout)
-            stampUI = StampUI(p=self, n=stamp.name, sp=stamp.stampPath)
+            stampUI = StampUI(p=self, n=stamp.name, sp=stamp.stampPath, i=self.stampLibrary.index(stamp), e=self.check_checkbox(self.isEditingCB))
             index = indexX + (indexY & self.numLibColumns)
             cmds.gridLayout(self.libraryLayout, e=True, pos=[stampUI.getLayout(), index])
             indexX += 1
@@ -146,12 +166,12 @@ class StampBuddy():
         self.numLibRows = 1
         totalWidth = self.uiSize[0] * self.stampLibrary.__len__()
         if (totalWidth > winWidth):
-            self.numLibRows = round(winWidth/self.uiSize[1])
+            self.numLibColumns = round(winWidth/self.uiSize[0])
 
-        cols = winHeight / self.uiSize[1]
-        cols = math.trunc(cols)
-        if (cols <= 0): cols = 1
-        self.numLibColumns = cols
+        rows = winHeight / self.uiSize[1]
+        rows = math.trunc(rows)
+        if (rows <= 0): rows = 1
+        self.numLibRows = rows
 
 
     def recalc_stamp_grid(self):
@@ -162,7 +182,7 @@ class StampBuddy():
             self.display_library()
 
 
-    def checkCheckbox(self, checkbox):
+    def check_checkbox(self, checkbox):
         return cmds.checkBox(checkbox, q=True, v=True)
 
 
@@ -269,6 +289,13 @@ class StampBuddy():
                 return
 
     
+    def prompt_delete_stamp(self, index):
+        promptResult = cmds.confirmDialog(title='Delete Stamp: ' + self.stampLibrary[index].name + '?', m='Remove this stamp (FBX file will remain)', button=['Yes','No'], defaultButton='Yes', cancelButton='No', dismissString='No' )
+        if (promptResult == 'Yes'):
+            self.stampLibrary.pop(index)
+            self.display_library()
+
+
     def prompt_load_library(self):
         promptResult = cmds.confirmDialog(title='load a library', m='do you want to create or load a stamp library', button=['Create','Load'], defaultButton='Create', cancelButton='Quit', dismissString='Quit' )
         if (promptResult == 'Create'):
