@@ -7,11 +7,11 @@ Author: Isaac Lovy
 import maya.api.OpenMaya as om
 import maya.OpenMaya as omold
 import maya.OpenMayaUI as omui
-import math
-import json
 import maya.cmds as cmds
 import maya.mel as mel
 import os
+import math
+import json
 
 
 class Stamp(object):
