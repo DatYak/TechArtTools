@@ -231,7 +231,7 @@ class StampBuddy():
             fnMesh = omold.MFnMesh(dagPath)
 
             hitPoint = omold.MFloatPoint()
-            hitRayParam = None
+            hitRayParam = omold.floatPtr()
             hitFace = omold.intPtr()
             hitTriangle = None
             hitBary1 = None
@@ -278,7 +278,8 @@ class StampBuddy():
 
                 scale = 1
                 if cmds.checkBox(self.isDraggingToggle, q=True, v=True):
-                    scale = math.sqrt((initialPosition.x - position.x) ** 2 + (initialPosition.y - position.y) ** 2 + (initialPosition.z - position.z) ** 2) * 200
+                    scale = math.sqrt((initialPosition.x - position.x) ** 2 + (initialPosition.y - position.y) ** 2 + (initialPosition.z - position.z) ** 2)
+                    scale *= 10 * hitRayParam.value()
                 else:
                     scale = cmds.floatField(self.scaleEntry, q=True, v=True)
 
