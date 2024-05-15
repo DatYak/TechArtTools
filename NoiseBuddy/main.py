@@ -2,12 +2,18 @@ import sys
 import random
 import math
 from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6.QtCore import Qt
 
 noise_size = 512
 
+#https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
 class PerlinNoise():
 
     def __init__(self):    
+        self.seed()
+
+
+    def seed(self):
         self.perm = [*range(256)]
         random.shuffle(self.perm)
         self.perm += self.perm
@@ -15,11 +21,13 @@ class PerlinNoise():
                 math.sin(a * 2.0 * math.pi / 256))
                 for a in range(256)]
 
+
     def fBm(self, x, y, per, octs):
         val = 0
         for o in range(octs):
             val += 0.5**o * self.noise(x*2**o, y*2**o, per*2**o)
         return val
+
 
     def noise(self, x, y, per):
         def surflet(gridX, gridY):
@@ -47,8 +55,8 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
         layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.noise_display, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.button)
-        layout.addWidget(self.noise_display)
 
         self.widget = QtWidgets.QWidget()
         self.widget.setLayout(layout)
