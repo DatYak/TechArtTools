@@ -54,9 +54,15 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         self.noise_display = QtWidgets.QLabel()
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
+        self.frequencySlider = QtWidgets.QSlider(Qt.Orientation.Horizontal)
+        self.frequencySlider.setMinimum(32)
+        self.frequencySlider.setMaximum(128)
+
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.noise_display, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.button)
+
+        layout.addWidget(self.frequencySlider)
 
         self.widget = QtWidgets.QWidget()
         self.widget.setLayout(layout)
@@ -69,7 +75,8 @@ class NoiseBuddy(QtWidgets.QMainWindow):
 
         noise = PerlinNoise()
 
-        size, freq, octs, data = noise_size, 1/32.0, 5, []
+        freqF = float(self.frequencySlider.value())
+        size, freq, octs, data = noise_size, 1/freqF, 5, []
 
         for y in range(size):
             for x in range(size):
