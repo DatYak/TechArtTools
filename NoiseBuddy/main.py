@@ -5,6 +5,18 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtCore import Qt
 
 noise_size = 512
+layer_thumb_size = 128
+
+class NoiseLayer(QtWidgets.QLabel):
+    def __init__(self):
+        super(NoiseLayer, self).__init__()
+
+
+    def showNoise(self, noise):
+        self.img = noise
+        self.thumb = self.img.smoothScaled(layer_thumb_size, layer_thumb_size)
+        self.setPixmap(QtGui.QPixmap(self.thumb))
+
 
 #https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
 class PerlinNoise():
@@ -47,23 +59,48 @@ class NoiseBuddy(QtWidgets.QMainWindow):
     def __init__(self):
         super(NoiseBuddy, self).__init__()
 
-        self.button = QtWidgets.QPushButton("Generate Perlin")
-    
-        self.img = QtGui.QImage(QtCore.QSize(noise_size, noise_size), QtGui.QImage.Format.Format_RGB888)
+        self.setWindowTitle("Noise Buddy")
 
+        #Current output
+        self.img = QtGui.QImage(QtCore.QSize(noise_size, noise_size), QtGui.QImage.Format.Format_RGB888)
         self.noise_display = QtWidgets.QLabel()
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
+        #Individual layers
+        self.noiseImgs = []
+        self.noiseDisps = []
+
+        layout = QtWidgets.QVBoxLayout()
+        noisesLayout = QtWidgets.QHBoxLayout()
+        noisesLayout.addWidget(self.noise_display)
+
+        self.layersScroll = QtWidgets.QScrollArea()
+        self.scrollVBox = QtWidgets.QVBoxLayout()
+
+        #Scroll view setup
+        self.layersScroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.layersScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.layersScroll.setWidgetResizable(True)
+        self.layersScroll.setFixedHeight(600)
+
+        self.layersScroll.setLayout(self.scrollVBox)
+        self.scrollVBox.addWidget(self.layersScroll)
+        
+        noisesLayout.addWidget(self.layersScroll)
+        
+        layout.addLayout(noisesLayout)
+
+        #Generate noise button
+        self.button = QtWidgets.QPushButton("Generate Perlin")
+        layout.addWidget(self.button)
+
+        #Frequency slider
         self.frequencySlider = QtWidgets.QSlider(Qt.Orientation.Horizontal)
         self.frequencySlider.setMinimum(32)
         self.frequencySlider.setMaximum(128)
-
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.noise_display, Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.button)
-
         layout.addWidget(self.frequencySlider)
 
+        #Widget
         self.widget = QtWidgets.QWidget()
         self.widget.setLayout(layout)
         self.setCentralWidget(self.widget)
@@ -76,7 +113,7 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         noise = PerlinNoise()
 
         freqF = float(self.frequencySlider.value())
-        size, freq, octs, data = noise_size, 1/freqF, 5, []
+        size, freq, octs, data = noise_size, 1/freqF, 3, []
 
         for y in range(size):
             for x in range(size):
@@ -87,6 +124,13 @@ class NoiseBuddy(QtWidgets.QMainWindow):
                 data.append(int(v))
                 self.img.setPixelColor(x, y, QtGui.QColor(v, v, v))
 
+        self.noiseImgs.append(noise)
+        display = NoiseLayer()
+        display.showNoise(self.img)
+        self.scrollVBox.addWidget(display)
+        self.noiseDisps.append(display)
+
+        self.scrollVBox.update()
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
 if __name__ == "__main__":
