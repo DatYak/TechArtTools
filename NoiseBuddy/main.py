@@ -16,6 +16,8 @@ class NoiseLayer(QtWidgets.QLabel):
         self.img = noise
         self.thumb = self.img.smoothScaled(layer_thumb_size, layer_thumb_size)
         self.setPixmap(QtGui.QPixmap(self.thumb))
+        self.setMaximumSize(layer_thumb_size, layer_thumb_size)
+
 
 
 #https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
@@ -67,7 +69,6 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
         #Individual layers
-        self.noiseImgs = []
         self.noiseDisps = []
 
         layout = QtWidgets.QVBoxLayout()
@@ -75,16 +76,18 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         noisesLayout.addWidget(self.noise_display)
 
         self.layersScroll = QtWidgets.QScrollArea()
+        self.layersWidget = QtWidgets.QWidget()
         self.scrollVBox = QtWidgets.QVBoxLayout()
 
         #Scroll view setup
         self.layersScroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.layersScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.layersScroll.setFixedHeight(noise_size)
         self.layersScroll.setWidgetResizable(True)
-        self.layersScroll.setFixedHeight(600)
 
-        self.layersScroll.setLayout(self.scrollVBox)
-        self.scrollVBox.addWidget(self.layersScroll)
+        self.layersWidget.setLayout(self.scrollVBox)
+
+        self.layersScroll.setWidget(self.layersWidget)
         
         noisesLayout.addWidget(self.layersScroll)
         
@@ -124,13 +127,13 @@ class NoiseBuddy(QtWidgets.QMainWindow):
                 data.append(int(v))
                 self.img.setPixelColor(x, y, QtGui.QColor(v, v, v))
 
-        self.noiseImgs.append(noise)
         display = NoiseLayer()
         display.showNoise(self.img)
-        self.scrollVBox.addWidget(display)
         self.noiseDisps.append(display)
 
+        self.scrollVBox.addWidget(display)
         self.scrollVBox.update()
+
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
 if __name__ == "__main__":
