@@ -7,16 +7,18 @@ from PySide6.QtCore import Qt
 noise_size = 512
 layer_thumb_size = 128
 
-class NoiseLayer(QtWidgets.QLabel):
+class NoiseLayer(QtWidgets.QHBoxLayout):
     def __init__(self):
         super(NoiseLayer, self).__init__()
 
 
     def showNoise(self, noise):
         self.img = noise
+        label = QtWidgets.QLabel()
         self.thumb = self.img.smoothScaled(layer_thumb_size, layer_thumb_size)
-        self.setPixmap(QtGui.QPixmap(self.thumb))
-        self.setMaximumSize(layer_thumb_size, layer_thumb_size)
+        label.setPixmap(QtGui.QPixmap(self.thumb))
+        label.setMaximumSize(layer_thumb_size, layer_thumb_size)
+        self.addWidget(label)
 
 
 
@@ -131,7 +133,7 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         display.showNoise(self.img)
         self.noiseDisps.append(display)
 
-        self.scrollVBox.addWidget(display)
+        self.scrollVBox.addLayout(display)
         self.scrollVBox.update()
 
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
