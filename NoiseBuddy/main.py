@@ -12,7 +12,8 @@ class NoiseLayer(QtWidgets.QHBoxLayout):
         super(NoiseLayer, self).__init__()
 
 
-    def showNoise(self, noise):
+    def showNoise(self, noise, parent):
+        self.p = parent
         self.img = noise
         label = QtWidgets.QLabel()
         self.thumb = self.img.smoothScaled(layer_thumb_size, layer_thumb_size)
@@ -20,6 +21,30 @@ class NoiseLayer(QtWidgets.QHBoxLayout):
         label.setMaximumSize(layer_thumb_size, layer_thumb_size)
         self.addWidget(label)
 
+        self.blend_option = QtGui.QPainter.CompositionMode.CompositionMode_Source
+
+        self.blend_dropdown = QtWidgets.QComboBox()
+        self.blend_dropdown.addItem("Normal")
+        self.blend_dropdown.addItem("Multiply")
+        self.blend_dropdown.addItem("Screen")
+        self.addWidget(self.blend_dropdown)
+        self.blend_dropdown.currentTextChanged.connect(self.blendmodeChanged)
+
+        self.opacity_slider = QtWidgets.QSlider(Qt.Orientation.Vertical)
+        self.opacity_slider.setMinimum(0)
+        self.opacity_slider.setMaximum(255)
+        self.opacity_slider.setValue(255)
+        self.addWidget(self.opacity_slider) 
+        self.opacity_slider.sliderMoved.connect(self.opacityChanged)
+
+    def opacityChanged(self, value):
+        self.p.displayOutput()
+
+    def blendmodeChanged(self, m):
+        if m == "Normal": self.blend_option = QtGui.QPainter.CompositionMode.CompositionMode_Source
+        if m == "Multiply": self.blend_option = QtGui.QPainter.CompositionMode.CompositionMode_Multiply
+        if m == "Screen": self.blend_option = QtGui.QPainter.CompositionMode.CompositionMode_Screen
+        self.p.displayOutput()
 
 
 #https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
@@ -71,7 +96,7 @@ class NoiseBuddy(QtWidgets.QMainWindow):
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
 
         #Individual layers
-        self.noiseDisps = []
+        self.noise_layers = []
 
         layout = QtWidgets.QVBoxLayout()
         noisesLayout = QtWidgets.QHBoxLayout()
@@ -130,13 +155,24 @@ class NoiseBuddy(QtWidgets.QMainWindow):
                 self.img.setPixelColor(x, y, QtGui.QColor(v, v, v))
 
         display = NoiseLayer()
-        display.showNoise(self.img)
-        self.noiseDisps.append(display)
+        display.showNoise(self.img, self)
+        self.noise_layers.append(display)
 
         self.scrollVBox.addLayout(display)
         self.scrollVBox.update()
+        self.displayOutput()
 
+
+    def displayOutput(self):
+        self.img = QtGui.QImage(QtCore.QSize(noise_size, noise_size), QtGui.QImage.Format.Format_RGB888)
+        painter = QtGui.QPainter(self.img)
+        for n in self.noise_layers:
+            painter.setCompositionMode(n.blend_option)
+            painter.setOpacity(n.opacity_slider.value() / 255.0)
+            painter.drawImage(0, 0, n.img)
+        
         self.noise_display.setPixmap(QtGui.QPixmap(self.img))
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
