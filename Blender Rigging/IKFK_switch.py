@@ -1,28 +1,21 @@
 import bpy
 
-def apply_ik_constraint (target, bone, pole):
+def add_ik_constraint (target_name, bone, pole_name):
     constraint = bone.constraints.new("IK")
     constraint.target = bpy.context.view_layer.objects.active
-    constraint.subtarget = target.name
+    constraint.subtarget = target_name
     constraint.pole_target = bpy.context.view_layer.objects.active
-    constraint.pole_subtarget = pole.name
+    constraint.pole_subtarget = pole_name
     
     constraint.chain_count = 2
     constraint.pole_angle = 180
-    
 
-#selected_bones = bpy.context.selected_pose_bones
-
-# target = None
-# bone = None
-# pole = None
-
-# for bone in selected_bones:
-#     bone_name = bone.name
-#     if (bone_name.find("_pole") != -1):
-#         pole = bone
-#     if (bone_name.find("_target") != -1):
-#         target = bone
+def add_copy_transform(bone_name, target_name):
+    armature = bpy.context.view_layer.objects.active
+    bone = armature.pose.bones[bone_name]
+    constraint = bone.constraints.new('COPY_TRANSFORMS')
+    constraint.target = armature
+    constraint.subtarget = target_name
 
 def copy_rename_bones(armature, bone_chain, prefix):
     root_bone_name = prefix + bone_chain[0].name
@@ -37,7 +30,7 @@ def copy_rename_bones(armature, bone_chain, prefix):
             parent = copy_bone.name
         copied_bones.append(copy_bone)
 
-        return copy_bone
+    return copied_bones
     
 
 def copy_bones(num_links):
@@ -51,6 +44,12 @@ def copy_bones(num_links):
 
     fk_bones = copy_rename_bones(armature, bone_chain, "FK_")
     ik_bones = copy_rename_bones(armature, bone_chain, "IK_")
+
+    bpy.ops.object.mode_set(mode='POSE')
+
+    for bone in bone_chain:
+        add_copy_transform(bone.name, "FK_" + bone.name)
+        add_copy_transform(bone.name, "IK_" + bone.name)
 
 
 copy_bones(2)
