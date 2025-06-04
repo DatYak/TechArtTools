@@ -68,7 +68,7 @@ def main():
         fk_curve = bone.constraints['FK_COPY']
 
         ik_driver.type = 'SCRIPTED'
-        ik_driver.expression = 'IKFK_Switch'\
+        ik_driver.expression = 'IKFK_Switch'
 
         v = ik_driver.variables.new()
         v.name = 'IKFK_Switch'
