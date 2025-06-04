@@ -56,6 +56,10 @@ def main():
     
     root_bone = bpy.context.object.pose.bones['ROOT']
     root_bone['IKFK_Switch'] = 1.0
+    id_props = root_bone.id_properties_ui('IKFK_Switch')
+    id_props.update(min=0, max=1)
+    root_bone.property_overridable_library_set('["IKFK_Switch"]', True)
+
 
     for edit_bone in bone_chain:
         bone = bpy.context.object.pose.bones[edit_bone.name]
@@ -64,7 +68,7 @@ def main():
         fk_curve = bone.constraints['FK_COPY']
 
         ik_driver.type = 'SCRIPTED'
-        ik_driver.expression = 'IKFK_Switch'
+        ik_driver.expression = 'IKFK_Switch'\
 
         v = ik_driver.variables.new()
         v.name = 'IKFK_Switch'
